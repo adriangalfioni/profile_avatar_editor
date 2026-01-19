@@ -1,5 +1,8 @@
-package agalfioni.profileavatareditor.avatar_editor.presentation.components
+package agalfioni.profileavatareditor.avatar_editor.presentation
 
+import agalfioni.profileavatareditor.avatar_editor.presentation.components.NineAreaCircleGrid
+import agalfioni.profileavatareditor.avatar_editor.presentation.components.PrimaryButton
+import agalfioni.profileavatareditor.avatar_editor.presentation.components.cornerBorder
 import agalfioni.profileavatareditor.R
 import agalfioni.profileavatareditor.avatar_editor.data.StorageUtil
 import agalfioni.profileavatareditor.core.navigation.ResultStore
@@ -139,7 +142,7 @@ fun AvatarEditorScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(64.dp))
-            
+
             ImageWithCropArea(
                 imageUri = imageUri,
                 onCropRectChanged = { rect, size ->
@@ -147,9 +150,9 @@ fun AvatarEditorScreen(
                     containerSize = size
                 }
             )
-            
+
             Spacer(modifier = Modifier.height(80.dp))
-            
+
             PrimaryButton(
                 text = "Save",
                 modifier = Modifier
@@ -165,7 +168,7 @@ fun AvatarEditorScreen(
                                 StorageUtil.savePathToPreferences(context, savedPath)
 
                                 // Navigate away
-                                resultStore?.setResult("cropped_image", bitmap)
+                                resultStore?.setResult("image_updated", true)
                                 onImageCropped()
                             }
                         }
@@ -308,15 +311,15 @@ private fun cropBitmap(
     return try {
         val inputStream = context.contentResolver.openInputStream(uri)
         val originalBitmap = BitmapFactory.decodeStream(inputStream) ?: return null
-        
+
         // 1. Calculate the actual displayed size of the image within the container (ContentScale.Crop)
         val containerAspect = containerSize.width / containerSize.height
         val bitmapAspect = originalBitmap.width.toFloat() / originalBitmap.height.toFloat()
-        
+
         val scale: Float
         val offsetX: Float
         val offsetY: Float
-        
+
         if (bitmapAspect > containerAspect) {
             // Bitmap is wider than container
             scale = containerSize.height / originalBitmap.height.toFloat()
@@ -328,13 +331,13 @@ private fun cropBitmap(
             offsetX = 0f
             offsetY = (originalBitmap.height.toFloat() * scale - containerSize.height) / 2f
         }
-        
+
         // 2. Map the cropRect from container coordinates to original bitmap coordinates
         val bitmapLeft = (cropRect.left + offsetX) / scale
         val bitmapTop = (cropRect.top + offsetY) / scale
         val bitmapWidth = cropRect.width / scale
         val bitmapHeight = cropRect.height / scale
-        
+
         // 3. Perform the crop
         Bitmap.createBitmap(
             originalBitmap,

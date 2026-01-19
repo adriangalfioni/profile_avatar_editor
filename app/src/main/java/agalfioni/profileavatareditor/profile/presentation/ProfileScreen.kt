@@ -1,5 +1,9 @@
-package agalfioni.profileavatareditor.profile.presentation.components
+package agalfioni.profileavatareditor.profile.presentation
 
+import agalfioni.profileavatareditor.profile.presentation.components.ActionButton
+import agalfioni.profileavatareditor.profile.presentation.components.AvatarPictureContainer
+import agalfioni.profileavatareditor.profile.presentation.components.MenuCard
+import agalfioni.profileavatareditor.profile.presentation.components.MenuItem
 import agalfioni.profileavatareditor.R
 import agalfioni.profileavatareditor.avatar_editor.data.StorageUtil
 import agalfioni.profileavatareditor.core.navigation.ResultStore
@@ -136,16 +140,17 @@ fun ProfileScreen(
         // In a real app, you might want to observe this as State or Flow
         val avatarImagePath = remember { StorageUtil.getSavedAvatarPath(context) }
 
-        val croppedImage = resultStore?.getResult<Bitmap>("cropped_image")
+        val imageUpdated = resultStore?.getResult<Boolean>("image_updated")
 
-        LaunchedEffect(avatarImagePath, croppedImage) {
-            if (avatarImagePath != null && croppedImage != null) {
+        LaunchedEffect(avatarImagePath, imageUpdated) {
+            if (avatarImagePath != null && imageUpdated == true) {
                 scope.launch {
                     snackbarHostState.showSnackbar(
                         message = "Avatar updated successfully",
-                        duration = SnackbarDuration.Long
+                        duration = SnackbarDuration.Short
                     )
                 }
+                resultStore.removeResult("image_updated")
             }
         }
 

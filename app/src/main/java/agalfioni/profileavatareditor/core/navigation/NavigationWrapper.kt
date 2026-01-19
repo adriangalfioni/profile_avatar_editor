@@ -1,8 +1,8 @@
-package agalfioni.wintertravelgallery.core.navigation
+package agalfioni.profileavatareditor.core.navigation
 
-import agalfioni.profileavatareditor.avatar_editor.presentation.components.AvatarEditorScreen
-import agalfioni.profileavatareditor.core.navigation.rememberResultStore
-import agalfioni.profileavatareditor.profile.presentation.components.ProfileScreen
+import agalfioni.profileavatareditor.avatar_editor.presentation.AvatarEditorScreen
+import agalfioni.profileavatareditor.profile.presentation.ProfileScreen
+import agalfioni.wintertravelgallery.core.navigation.Route
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
