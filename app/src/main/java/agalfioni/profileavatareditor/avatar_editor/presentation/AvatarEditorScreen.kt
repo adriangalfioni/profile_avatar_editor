@@ -1,10 +1,9 @@
 package agalfioni.profileavatareditor.avatar_editor.presentation
 
+import agalfioni.profileavatareditor.R
 import agalfioni.profileavatareditor.avatar_editor.presentation.components.NineAreaCircleGrid
 import agalfioni.profileavatareditor.avatar_editor.presentation.components.PrimaryButton
 import agalfioni.profileavatareditor.avatar_editor.presentation.components.cornerBorder
-import agalfioni.profileavatareditor.R
-import agalfioni.profileavatareditor.avatar_editor.data.StorageUtil
 import agalfioni.profileavatareditor.core.navigation.ResultStore
 import agalfioni.profileavatareditor.ui.theme.PlusJakartaSans
 import agalfioni.profileavatareditor.ui.theme.ProfileAvatarEditorTheme
@@ -40,10 +39,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,20 +64,52 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.min
 import kotlin.math.roundToInt
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AvatarEditorScreen(
     imageUri: Uri,
+    resultStore: ResultStore,
     modifier: Modifier = Modifier,
     onImageCropped: () -> Unit = {},
-    resultStore: ResultStore? = null,
+    viewModel: AvatarEditorViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.onSaveSuccess.collectLatest {
+            resultStore.setResult("image_updated", true)
+            onImageCropped()
+        }
+    }
+
+    AvatarEditorRoot(
+        imageUri = imageUri,
+        modifier = modifier,
+        onImageCropped = onImageCropped,
+        saveCroppedImage = { bitmap ->
+            viewModel.saveCroppedImage(bitmap)
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AvatarEditorRoot(
+    imageUri: Uri,
+    modifier: Modifier = Modifier,
+    onImageCropped: () -> Unit = {},
+    saveCroppedImage: (Bitmap) -> Unit = {}
+) {
+
     val navigationIconSize = 40.dp
+    var cropRect by remember { mutableStateOf(Rect.Zero) }
+    var containerSize by remember { mutableStateOf(Size.Zero) }
+    val context = LocalContext.current
 
     Scaffold(
         modifier = Modifier
@@ -92,7 +123,7 @@ fun AvatarEditorScreen(
                 ),
                 navigationIcon = {
                     Button(
-                        onClick = { onImageCropped() },
+                        onClick = onImageCropped,
                         modifier= Modifier.size(navigationIconSize),
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(0.dp),  //avoid the little icon
@@ -129,11 +160,6 @@ fun AvatarEditorScreen(
         }
     ) { innerPadding ->
 
-        var cropRect by remember { mutableStateOf(Rect.Zero) }
-        var containerSize by remember { mutableStateOf(Size.Zero) }
-        val scope = rememberCoroutineScope() // Needed to run background tasks
-        val context = LocalContext.current
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -143,7 +169,7 @@ fun AvatarEditorScreen(
         ) {
             Spacer(modifier = Modifier.height(64.dp))
 
-            ImageWithCropArea(
+            CropArea(
                 imageUri = imageUri,
                 onCropRectChanged = { rect, size ->
                     cropRect = rect
@@ -162,15 +188,7 @@ fun AvatarEditorScreen(
                     if (containerSize != Size.Zero && cropRect != Rect.Zero) {
                         val bitmap = cropBitmap(context, imageUri, cropRect, containerSize)
                         if (bitmap != null) {
-                            // Save to disk in background
-                            scope.launch {
-                                val savedPath = StorageUtil.saveToInternalStorage(context, bitmap)
-                                StorageUtil.savePathToPreferences(context, savedPath)
-
-                                // Navigate away
-                                resultStore?.setResult("image_updated", true)
-                                onImageCropped()
-                            }
+                            saveCroppedImage(bitmap)
                         }
                     }
                 }
@@ -180,7 +198,7 @@ fun AvatarEditorScreen(
 }
 
 @Composable
-fun ImageWithCropArea(
+fun CropArea(
     imageUri: Uri,
     onCropRectChanged: (Rect, Size) -> Unit,
     modifier: Modifier = Modifier
@@ -354,8 +372,10 @@ private fun cropBitmap(
 
 @Preview
 @Composable
-private fun AvatarEditorScreenPreview() {
+private fun AvatarEditorPreview() {
     ProfileAvatarEditorTheme {
-        AvatarEditorScreen(Uri.EMPTY)
+        AvatarEditorRoot(
+            imageUri = Uri.EMPTY
+        )
     }
 }

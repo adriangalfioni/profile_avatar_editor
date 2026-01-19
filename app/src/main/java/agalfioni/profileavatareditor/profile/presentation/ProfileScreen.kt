@@ -1,15 +1,13 @@
 package agalfioni.profileavatareditor.profile.presentation
 
+import agalfioni.profileavatareditor.R
+import agalfioni.profileavatareditor.core.navigation.ResultStore
 import agalfioni.profileavatareditor.profile.presentation.components.ActionButton
 import agalfioni.profileavatareditor.profile.presentation.components.AvatarPictureContainer
 import agalfioni.profileavatareditor.profile.presentation.components.MenuCard
 import agalfioni.profileavatareditor.profile.presentation.components.MenuItem
-import agalfioni.profileavatareditor.R
-import agalfioni.profileavatareditor.avatar_editor.data.StorageUtil
-import agalfioni.profileavatareditor.core.navigation.ResultStore
 import agalfioni.profileavatareditor.ui.theme.PlusJakartaSans
 import agalfioni.profileavatareditor.ui.theme.ProfileAvatarEditorTheme
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -54,18 +52,36 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
+    modifier: Modifier = Modifier,
+    onPictureSelected: (Uri) -> Unit = {},
+    resultStore: ResultStore? = null,
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
+    ProfileScreenRoot(
+        avatarImagePath = viewModel.avatarPath.value,
+        modifier = modifier,
+        onPictureSelected = onPictureSelected,
+        resultStore = resultStore,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileScreenRoot(
+    avatarImagePath: String?,
     modifier: Modifier = Modifier,
     onPictureSelected: (Uri) -> Unit = {},
     resultStore: ResultStore? = null,
@@ -77,6 +93,7 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
 
     val navigationIconSize = 40.dp
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         modifier = Modifier
@@ -134,16 +151,10 @@ fun ProfileScreen(
             }
         }
 
-        val context = LocalContext.current
-
-        // 1. Retrieve the path from Preferences
-        // In a real app, you might want to observe this as State or Flow
-        val avatarImagePath = remember { StorageUtil.getSavedAvatarPath(context) }
-
         val imageUpdated = resultStore?.getResult<Boolean>("image_updated")
 
-        LaunchedEffect(avatarImagePath, imageUpdated) {
-            if (avatarImagePath != null && imageUpdated == true) {
+        LaunchedEffect(imageUpdated) {
+            if (imageUpdated == true) {
                 scope.launch {
                     snackbarHostState.showSnackbar(
                         message = "Avatar updated successfully",
@@ -231,6 +242,8 @@ fun OptionsButtonMenu(modifier: Modifier = Modifier) {
 @Composable
 private fun ProfileScreenPreview() {
     ProfileAvatarEditorTheme {
-        ProfileScreen()
+        ProfileScreenRoot(
+            avatarImagePath = null
+        )
     }
 }
